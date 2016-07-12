@@ -32,6 +32,7 @@
         //public properties
         this.el = el instanceof $ ? el : $(el);
         this.image = {
+            instance : null,
             width : 0,
             height : 0
         };
@@ -310,7 +311,7 @@
             var newSize = getPreviewSize();
             self.preview.attr({width: newSize[0], height: newSize[1]});
             var ctx = self.preview[0].getContext('2d');
-            ctx.drawImage(self.el[0], data.x, data.y, data.width, data.height, 0, 0, newSize[0], newSize[1]);
+            ctx.drawImage(self.image.instance, data.x, data.y, data.width, data.height, 0, 0, newSize[0], newSize[1]);
         };
 
         var translateValue = function(value, coef){
@@ -348,6 +349,7 @@
         
         this.getRealSize = function(callback){
             var img = new Image();
+            img.setAttribute('crossOrigin', 'anonymous');
             img.onload = function () {
                 self.image.width = this.width; 
                 self.image.height = this.height; 
@@ -364,17 +366,16 @@
                 };
             };
             img.src = self.el.attr('src');
+            self.image.instance = img;
             
         };
         
         this.getDataURL = function(width, height){
             width = width || self.cropData.width;
             height = height || self.cropData.height;
-            var newSize = getPreviewSize();
-            //var canvas = $('<canvas width="' + newSize[0] + '" height="' + newSize[1] + '"></canvas>');
-             var canvas = $('<canvas width="' + width + '" height="' + height + '"></canvas>');
+            var canvas = $('<canvas width="' + width + '" height="' + height + '"></canvas>');
             var ctx = canvas[0].getContext('2d');
-            ctx.drawImage(self.el[0], self.cropData.x, self.cropData.y, self.cropData.width, self.cropData.height, 0, 0,width, height);
+            ctx.drawImage(self.image.instance, self.cropData.x, self.cropData.y, self.cropData.width, self.cropData.height, 0, 0,width, height);
             return canvas[0].toDataURL();
         };
         

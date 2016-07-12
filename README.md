@@ -97,7 +97,7 @@ Event | Params | Description
 You can call methods like : `$('#image').rcrop('resize', 200,200)`
 
 Name | Params | Return | Description
---- | --- | ---
+--- | --- | --- | ---
 **resize** | width, height, x, y | void | Set a size and position of the crop area
 **getValues** | void | Object | Get width, height, x, y values of the crop area.
 **destroy** | void | void | destroy instance

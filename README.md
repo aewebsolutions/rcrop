@@ -29,6 +29,8 @@ Last, you can activate a preview or, even, get a base64 image encoded. All that 
 
 Include JQuery js and plugin’s css and js files in your HTML code.
 
+(Alert: Responsive Cropper uses [Clayfy JQuery Plugin](https://github.com/aewebsolutions/clayfy/) to drag an resize selected/crop area. So, if you are thinking to use Clayfy, you wont need to install it twice: just include rcrop files.)
+
 ```html
 
 <script src="/lib/jquery.js"></script> 

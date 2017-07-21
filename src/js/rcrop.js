@@ -1,6 +1,5 @@
 ;(function ($) {
 
-    // Static Methods
     $.rcrop = {
         
         //Global settings for all instances
@@ -27,7 +26,10 @@
         
         //private properties
         var self = this,
-            prefix = 'rcrop-';
+            prefix = 'rcrop-',
+            initValues = {
+                x :0,y:0,width:0,height:0
+            };
 
         //public properties
         this.el = el instanceof $ ? el : $(el);
@@ -38,12 +40,12 @@
         };
         this.wrapper = $('<div>', {class: prefix + 'wrapper'});
         this.cropArea = $('<div>', {class : prefix + 'croparea' });
+        
         this.cropData = {
             width : 0,
             height : 0,
             x : 0,
             y : 0
-            
         };
         
         this.outer = {
@@ -103,39 +105,64 @@
         
         var addHandlers = function(){
             var handlerWr = $('<div class="'+prefix+'handler-wrapper"></div>');
-            $.each(['top-left', 'top-right', 'bottom-left', 'bottom-right' ], function(i, pos){
-                handlerWr.append('<div class="'+prefix+'handler-'+pos+' '+prefix+'handler-corner""></div>');
-            });
-            $.each(['top', 'right', 'bottom', 'left' ], function(i, pos){
-                handlerWr.append('<div class="'+prefix+'handler-'+pos+' '+prefix+'handler-border"></div>');
-            });
+            
+            //if is touchable, only append right bottom corner handler
+            if(isTouchDevice()){
+                handlerWr.append('<div class="'+prefix+'handler-bottom-right '+prefix+'handler-corner""></div>');
+            }else{
+                $.each(['top-left', 'top-right', 'bottom-left', 'bottom-right' ], function(i, pos){
+                    handlerWr.append('<div class="'+prefix+'handler-'+pos+' '+prefix+'handler-corner""></div>');
+                });
+                $.each(['top', 'right', 'bottom', 'left' ], function(i, pos){
+                    handlerWr.append('<div class="'+prefix+'handler-'+pos+' '+prefix+'handler-border"></div>');
+                });
+            }
             self.cropArea.append(handlerWr);
         };
 
+        /*
+         * ChangeStart is fired with resize or drag event start. Store initial
+         * position and dimensions of cropArea. Then, when drag or resize end,
+         * application can check which values have been changed. 
+         */
+        var changeStart = function(){
+            var pos = self.cropArea.position();
+            initValues = {
+                width : Math.round(self.cropArea.width()),
+                height : Math.round(self.cropArea.height()),
+                x : Math.round(pos.left),
+                y : Math.round(pos.top),
+            }
+        }
+        var changeEnd = function(){
+            var pos = self.cropArea.position(),
+                width = initValues.width !== Math.round(self.cropArea.width()),
+                height = initValues.height !== Math.round(self.cropArea.height()),
+                x = initValues.x !== Math.round(pos.left),
+                y = initValues.y !== Math.round(pos.top);
+            updateCropData(width, height, x, y);
+        }
+        
         /**
          * Update data to crop.
          * This will be triggered only on drop and on resizeend to speed up app.
+         * You can pass numbers to update, leave them empty (if you like to automatic
+         * update) or pass FALSE if you like a value not to be updated.
          */
-        var updateCropData = function(){
-            self.cropData = toAbsoluteValue({
-                width : self.clayfy.newSize.width,
-                height : self.clayfy.newSize.height,
-                y : self.clayfy.newSize.top,
-                x : self.clayfy.newSize.left
-            });
-            
-            // Fix some bugs created from size translation:
-            // First, we fix width and height
-            self.cropData.width = Math.max(self.cropData.width, self.settings.minSize[0]);
-            self.cropData.height = Math.max(self.cropData.height, self.settings.minSize[1]);
-            if(self.settings.maxSize[0])
-                self.cropData.width = Math.min(self.cropData.width, self.settings.maxSize[0]);
-            if(self.settings.maxSize[1])
-                self.cropData.height = Math.min(self.cropData.height, self.settings.maxSize[1]);
-            
-            // Second, we fix aspect ratio (if preserveAspect were have been activated)
-            
-            if(self.settings.preserveAspectRatio){
+        var updateCropData = function(width, height, x, y){
+            if(width !== false){
+                self.cropData.width = typeof width === "number" ? width : toAbsoluteValue(self.clayfy.newSize.width);
+                self.cropData.width = Math.max(self.cropData.width, self.settings.minSize[0]);
+                if(self.settings.maxSize[0])
+                    self.cropData.width = Math.min(self.cropData.width, self.settings.maxSize[0]);
+            }
+            if(height !== false){
+                self.cropData.height = typeof height === "number" ? height : toAbsoluteValue(self.clayfy.newSize.height);
+                self.cropData.height = Math.max(self.cropData.height, self.settings.minSize[1]);
+                if(self.settings.maxSize[1])
+                    self.cropData.height = Math.min(self.cropData.height, self.settings.maxSize[1]);
+            }
+            if((height !== false || width !== false) && self.settings.preserveAspectRatio){
                 var limitW = {
                     max : (self.settings.maxSize[0] || self.image.width),
                     min : self.settings.minSize[0]
@@ -147,22 +174,29 @@
                 }
             }
             
-            // Last, we fix y and x
-            if(self.cropData.y + self.cropData.height > self.image.height)
-                self.cropData.y = self.image.height - self.cropData.height;
-            if(self.cropData.x + self.cropData.width > self.image.width)
-                self.cropData.x = self.image.width - self.cropData.width;
-
+            if(x !== false){
+                self.cropData.x = typeof x === 'number' ? x : toAbsoluteValue(self.clayfy.newSize.left);
+                if(self.cropData.x + self.cropData.width > self.image.width)
+                    self.cropData.x = self.image.width - self.cropData.width;
+            }
+            if(y !== false){
+                self.cropData.y =  typeof y === 'number' ? y :  toAbsoluteValue(self.clayfy.newSize.top);
+                if(self.cropData.y + self.cropData.height > self.image.height)
+                    self.cropData.y = self.image.height - self.cropData.height;
+            }
+            
             //Send values to inputs
             if(self.settings.inputs)
-                 $.each(['x', 'y', 'width', 'height'], function(i, coord){
+                 $.each(['width', 'height', 'x', 'y'], function(i, coord){
                     self.wrapper.find('[name$="'+coord+'[]"]').val(self.cropData[coord]);
                 });
             
             //Update preview with cropData
             if(self.settings.preview.display)
                 updatePreview();
-        };
+
+        }
+
         
         /**
          * Transform cropArea and outers values to percentage.
@@ -239,8 +273,10 @@
 
             //Bind events
             //self.cropArea.on('clayfy-beforeresize', updateClayfySettings);
-            self.cropArea.on('mousedown touchstart', updateClayfySettings);
-            self.cropArea.on('clayfy-resizeend clayfy-drop', updateCropData);
+            self.cropArea.on('mousedown touchstart', updateClayfySettings);         
+            self.cropArea.on('clayfy-resizestart clayfy-dragstart', changeStart);
+            self.cropArea.on('clayfy-resizeend clayfy-drop', changeEnd);
+            
             self.cropArea.on('clayfy-resize clayfy-drag', resizeOuters);
 
             if(self.settings.preview.display){
@@ -323,7 +359,7 @@
                 return newValue;
             
             }else{
-                return value * coef;
+                return Math.round(value * coef);
             }
         };
         
@@ -338,7 +374,7 @@
         //public properties
         
         this.getValues = function(){
-            updateCropData();
+            //updateCropData();
             return {
                 width : self.cropData.width,
                 height : self.cropData.height,
@@ -380,54 +416,61 @@
         };
         
         this.resize = function(width, height, x, y){
-            var s = self.settings;
+
+            var s = self.settings,
+                relativeWidth, relativeHeight, relativeX, relativeY;
             
             width = s.maxSize[0] ? Math.min(width, self.image.width, s.maxSize[0]) : Math.min(width, self.image.width);
             height = s.maxSize[1] ? Math.min(height, self.image.height, s.maxSize[1]) : Math.min(height, self.image.height);
             width = s.minSize[0] ? Math.max(width, s.minSize[0]) : width;
             height = s.minSize[1] ? Math.max(height, s.minSize[1]) : height;
-            width = toRelativeValue(width);
-            height = toRelativeValue(height);
 
             if (s.preserveAspectRatio) {
                 if (width / height > self.cropAspectRatio) {
                     width = height * self.cropAspectRatio;
                 } else {
-                    height = width/ self.cropAspectRatio;
+                    height = width / self.cropAspectRatio;
                 }
             }
+            width = Math.round(width);
+            height = Math.round(height);
+            
+            relativeWidth = toRelativeValue(width);
+            relativeHeight = toRelativeValue(height);
             
             if(typeof y === 'undefined'){
                 y = self.cropArea.position().top;
             }else if(y === 'center'){
-                y = (self.el.height() - height )/2;
+                y = Math.round((self.image.height - height )/2);
             }else{
-                y = toRelativeValue(y);
+               y = Math.round(y);
             }
-            if(typeof x === 'undefined'){
-                x = self.cropArea.position().left;
-            }else if(x === 'center'){
-                x = (self.el.width() - width )/2;
-            }else{
-                x = toRelativeValue(x);
-            }
+            if(y+height > self.image.height)
+                y = self.image.height - height;
+            relativeY = toRelativeValue(y);
             
-            if(x+width > self.el.width())
-                x = self.el.width() - width;
+            if(typeof x === 'undefined'){
+                x = !self.cropData.x ? self.cropData.x : toAbsoluteValue(self.cropArea.position().left);
+            }else if(x === 'center'){
+                x = Math.round(( self.image.width - width )/2);
+            }else{
+                x = Math.round(x)
+            }
+            if(x+width > self.image.width)
+                x = self.image.width - width;
+            relativeX = toRelativeValue(x);
 
-            if(y+height > self.el.height())
-                y = self.el.height() - height;
-           
             self.cropArea.css({
-                width : width,
-                height : height,
-                top : y,
-                left : x
+                width : relativeWidth,
+                height : relativeHeight,
+                top : relativeY,
+                left : relativeX
             });
             
             self.clayfy.newSize = self.clayfy.getNewSize();
-            
-            updateCropData();
+
+            updateCropData(width, height, x, y);
+
             resizeOuters();
             toPercentage();
             
@@ -1460,11 +1503,13 @@ function Draggable(el, options){
         
         return true;
     };
-
+    
+    
+    
     var mousedown = function (e) {
         if (notDraggable.is(e.target) || (self.el.has(e.target).length && !self.settings.propagate))
             return;
-        if(typeof e.which !== 'undefined' && e.which !== 1)
+        if(!isTouchDevice() && typeof e.which !== 'undefined' && e.which !== 1)
             return;
          
         e.preventDefault();
@@ -1701,11 +1746,6 @@ function Draggable(el, options){
             $.clayfy.dY = 0;
     };
     
-    this.isTouchable = function () {
-        return (('ontouchstart' in window) ||
-                (navigator.maxTouchPoints > 0) ||
-                (navigator.msMaxTouchPoints > 0));
-    };
     
     this.destroy  =  function(){
       //Complete!!
@@ -1855,7 +1895,7 @@ function Resizable(el, options){
     
     //Private Methods
     var init = function () {
-        self.touchableDevice = self.isTouchable();
+        self.touchableDevice = isTouchDevice();
         self.originalSize = self.getSize();
         self.actualSize = self.originalSize;
         self.newSize = self.getNewSize();
@@ -1901,6 +1941,7 @@ function Resizable(el, options){
             self.hideHandlers();
             elAndHandlers = elAndHandlers.add(handler.el);
         });
+
         elAndHandlers.on('mouseover', function(){
             if(timeout)
                 clearTimeout(timeout);
@@ -1918,7 +1959,7 @@ function Resizable(el, options){
                 self.el.trigger('mouseout');
             }
         });
-        
+
         if(self.touchableDevice){
             elAndHandlers.on('touchstart', function(){
                 if(timeout)
@@ -1944,6 +1985,9 @@ function Resizable(el, options){
         
         var posibles = ['top left', 'top right', 'bottom left', 'bottom right', 'left', 'right', 'top', 'bottom'];
         
+        // if is touchable, make only one spot on bottom right
+        if(self.touchableDevice)
+            posibles = ['bottom right'];
 
         if(self.el.css('position') === 'static')
             self.el.css('position', 'relative');
@@ -2041,7 +2085,7 @@ function Resizable(el, options){
         insideBox = false;
     };
     this.showHandlers = function(){
-        if(insideBox || self.status !== 'ready')
+        if(insideBox || (self.status !== 'ready' && !self.touchableDevice))
             return;
         $.each(self.handlers, function (i, handler) {
             handler.el.css('display', 'block');
@@ -2070,18 +2114,12 @@ function Resizable(el, options){
         });
     };
     
-    this.isTouchable = function () {
-        return (('ontouchstart' in window) ||
-                (navigator.maxTouchPoints > 0) ||
-                (navigator.msMaxTouchPoints > 0));
-    };
-    
     //Auto init
     init();
  };
 
 function ResizableHandler(position, resizable){
-    this.el = $('<div>', {class : 'clayfy-handler clayfy-'+position, style : 'position: absolute;'});
+    this.el = $('<div>', {class : 'clayfy-handler clayfy-'+position, style : 'position: absolute'});
     this.resizable = resizable;
     this.position = position;
     this.draggable;
@@ -2187,12 +2225,15 @@ function ResizableHandler(position, resizable){
             resizable.el.trigger('clayfy-resize');
             resizable.settings.callbacks.resize();
         });
+        
+        //Touchable
+        if(self.resizable.touchableDevice)
+            self.el.addClass('clayfy-touch-device');
     };
 
     //Public Methods
     this.updatePosition = function () {
         var s = resizable.newSize;
-
         switch (self.position) {
             case 'left' :
                 self.el.css({width: 5, left: s.left, top: s.top, height: s.outerHeight});
@@ -2217,7 +2258,10 @@ function ResizableHandler(position, resizable){
                 self.el.css({width: 8, height: 8, left: s.left, top: s.bottom - 8});
                 break;
             case 'bottom right' :
-                self.el.css({width: 8, height: 8, left: s.right - 8, top: s.bottom - 8});
+                if(self.resizable.touchableDevice)
+                    self.el.css({width: 18, height: 18, left: s.right - 20, top: s.bottom - 20});
+                else
+                    self.el.css({width: 8, height: 8, left: s.right - 8, top: s.bottom - 8});
                 break;
 
         }

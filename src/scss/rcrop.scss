@@ -233,7 +233,18 @@ $break-small : 600px;
         
     }
     
+    .clayfy-touch-device{
+        #{$prefix}handler-bottom-right{
+            display: none;
+            width: 18px;
+            height: 18px;
+            bottom: -5px;
+            right: -5px;
+        }
+    }
+    
 }
+
 
 
 $prefix : 'clayfy';
@@ -288,11 +299,16 @@ $prefix : 'clayfy';
     &.#{$prefix}-right{
         cursor: w-resize;
     }
+    
+    &.#{$prefix}-touch-device{
+        background: #fff;
+        border : 1px solid #000;
+        border-radius: 3px;
+    }
+    
 
 }
 
 .#{$prefix}-sort-droparea{
     border : 2px solid #ccc
 }
-
-

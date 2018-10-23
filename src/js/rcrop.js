@@ -518,6 +518,8 @@
                     if (instance instanceof Plugin && typeof instance[options] === 'function') {
                         instance[options].apply(instance, Array.prototype.slice.call(args, 1));
                     }
+                    if(options === 'destroy')
+                        $(this).removeData(pluginName);
                 });
             }
         }

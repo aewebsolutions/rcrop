@@ -108,10 +108,10 @@
             
             //if is touchable, only append right bottom corner handler
             if(isTouchDevice()){
-                handlerWr.append('<div class="'+prefix+'handler-bottom-right '+prefix+'handler-corner""></div>');
+                handlerWr.append('<div class="'+prefix+'handler-bottom-right '+prefix+'handler-corner"></div>');
             }else{
                 $.each(['top-left', 'top-right', 'bottom-left', 'bottom-right' ], function(i, pos){
-                    handlerWr.append('<div class="'+prefix+'handler-'+pos+' '+prefix+'handler-corner""></div>');
+                    handlerWr.append('<div class="'+prefix+'handler-'+pos+' '+prefix+'handler-corner"></div>');
                 });
                 $.each(['top', 'right', 'bottom', 'left' ], function(i, pos){
                     handlerWr.append('<div class="'+prefix+'handler-'+pos+' '+prefix+'handler-border"></div>');

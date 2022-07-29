@@ -535,7 +535,7 @@
  * 
  */
 
-(function(){
+(function($){
 
 $.clayfy = {
     dX : 0,

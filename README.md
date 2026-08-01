@@ -67,7 +67,7 @@ $('#image-4').rcrop({
 ```
 
 ## Options
-Options can be set locally as a paramater or globally through $.rcrop.settings object.
+Options can be set locally as a parameter or globally through $.rcrop.settings object.
 
 
 Name | Type | Default | Description

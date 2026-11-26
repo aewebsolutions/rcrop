@@ -8,6 +8,7 @@
             minSize : [20, 20],
             maxSize : [null, null],
             preserveAspectRatio : false,
+            overrideAspectRatio : null,
             inputs : true,
             inputsPrefix : '',
             grid : false,
@@ -65,7 +66,9 @@
         //private methods
         
         var init = function(){
-            self.cropAspectRatio = self.settings.minSize[0]/self.settings.minSize[1];
+            self.cropAspectRatio = self.settings.overrideAspectRatio ||
+                (self.settings.minSize[0] / self.settings.minSize[1]);
+            
             setContext();
             
             if(self.settings.preview.display)
@@ -263,11 +266,11 @@
             self.clayfy = self.cropArea.clayfy('instance');
             
             //Override clayfy's originalSize to preserve aspect ratio correctly.
-            self.clayfy.originalSize.width = self.settings.minSize[0];
-            self.clayfy.originalSize.height = self.settings.minSize[1];
+            self.clayfy.originalSize.width = s.minSize[0];
+            self.clayfy.originalSize.height = s.minSize[1];
             
             //Define cropArea size
-            var height = !s.full ? Math.max( self.image.height * 0.8, s.minSize[1]) : self.image.height,
+            var height = !s.full ? Math.max(self.image.height * 0.8, s.minSize[1]) : self.image.height,
                 width = !s.full ? Math.max(self.image.width * .8, s.minSize[0]) : self.image.width; 
             self.resize(width, height, 'center', 'center');
 
@@ -279,7 +282,7 @@
             
             self.cropArea.on('clayfy-resize clayfy-drag', resizeOuters);
 
-            if(self.settings.preview.display){
+            if(s.preview.display){
                 self.cropArea.on('clayfy-resize clayfy-drag', updatePreview);
                 self.cropArea.on('clayfy-cancel', updatePreview);
             }
@@ -300,7 +303,6 @@
                 size = [],
                 cropAreaSize = self.clayfy ? self.clayfy.newSize : {width : self.cropArea.width(), height : self.cropArea.height()};
             if(typeof previewSize[0] === 'string' && previewSize[0].indexOf('%')>-1){
-                
                 size[0] = Number(previewSize[0].replace('%', '')) / 100 * cropAreaSize.width;
             }else{
                 size[0] = previewSize[0];
@@ -326,7 +328,6 @@
             var size = getPreviewSize();
             self.preview = $('<canvas width="' + size[0] + '" height="' + size[1] + '"></canvas>');
             self.preview.appendTo(wrPrev);
-            
         };
         
         /*
@@ -403,7 +404,6 @@
             };
             img.src = self.el.attr('src');
             self.image.instance = img;
-            
         };
         
         this.getDataURL = function(width, height){
@@ -416,7 +416,6 @@
         };
         
         this.resize = function(width, height, x, y){
-
             var s = self.settings,
                 relativeWidth, relativeHeight, relativeX, relativeY;
             

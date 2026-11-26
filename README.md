@@ -75,8 +75,9 @@ Name | Type | Default | Description
 **grid** | bool | false |  Generate a grid over crop area.
 **full** | bool | false |  Whether crop area must cover all image when is initilized.
 **maxSize** | array | [null, null] | Maximum width and height of crop area. If not bounderies are required, set null.
-**minSize** | array | [20, 20] | Minumum width and height of crop area. Also, this defines aspect ratio when `preserveAspectRatio` is turn on.
+**minSize** | array | [20, 20] | Minumum width and height of crop area.
 **preserveAspectRatio** | bool | false | Force to preserve aspect ratio of crop area
+**overrideAspectRatio** | float | null | Set initial crop ratio. Set `preserveAspectRatio=true` to keep fixed.
 **inputs** | bool | true |  Generate inputs with crop data (usefull to send to server)
 **inputsPrefix** | string | void |  A prefix to inputs.
 **preview.display** | bool | false |  Display a preview image of the crop area
